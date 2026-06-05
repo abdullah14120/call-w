@@ -54,6 +54,7 @@ class MainActivity : AppCompatActivity() {
                 startActivityForResult(intent, REQUEST_ID)
             }
         } else {
+            // للأجهزة الأقدم من Android 10
             val intent = Intent(android.telecom.TelecomManager.ACTION_CHANGE_DEFAULT_DIALER)
             intent.putExtra(android.telecom.TelecomManager.EXTRA_CHANGE_DEFAULT_DIALER_PACKAGE_NAME, packageName)
             startActivity(intent)
@@ -66,7 +67,7 @@ class MainActivity : AppCompatActivity() {
             put(CallLog.Calls.DATE, System.currentTimeMillis())
             put(CallLog.Calls.DURATION, 0)
             put(CallLog.Calls.TYPE, CallLog.Calls.MISSED_TYPE) // نوع المكالمة: فائتة
-            put(CallLog.Calls.NEW, 1) // كأنها لم تُقرأ بعد
+            put(CallLog.Calls.NEW, 1) // كأنها مكالمة جديدة لم تُقرأ بعد
             put(CallLog.Calls.IS_READ, 0)
         }
 
