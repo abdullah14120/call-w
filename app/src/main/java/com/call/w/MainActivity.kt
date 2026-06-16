@@ -19,24 +19,32 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val etPhoneNumber = findViewById<EditText>(R.id.etPhoneNumber)
-        val btnInjectCall = findViewById<Button>(R.id.btnInjectCall)
-        
-        btnInjectCall.text = "حقن رسالة واردة"
+        val etSenderNumber = findViewById<EditText>(R.id.etSenderNumber)
+        val etMessageBody = findViewById<EditText>(R.id.etMessageBody)
+        val btnInjectSms = findViewById<Button>(R.id.btnInjectSms)
 
-        // طلب جعل التطبيق هو الافتراضي للرسائل
+        // طلب جعل التطبيق هو الافتراضي للرسائل عند الفتح
         requestDefaultSmsRole()
 
-        btnInjectCall.setOnClickListener {
-            val number = etPhoneNumber.text.toString().trim()
+        btnInjectSms.setOnClickListener {
+            val senderNumber = etSenderNumber.text.toString().trim()
+            val messageBody = etMessageBody.text.toString().trim()
             
-            if (number == "+" || number.isEmpty()) {
-                Toast.makeText(this, "يرجى كتابة رقم صحيح", Toast.LENGTH_SHORT).show()
+            // التحقق من إدخال رقم المرسل بشكل صحيح
+            if (senderNumber == "+" || senderNumber.isEmpty()) {
+                Toast.makeText(this, "يرجى كتابة رقم مرسل صحيح", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
+            // التحقق من عدم ترك محتوى الرسالة فارغاً
+            if (messageBody.isEmpty()) {
+                Toast.makeText(this, "يرجى كتابة محتوى للرسالة", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // التأكد من أن التطبيق لا يزال هو الافتراضي قبل إجراء الحقن
             if (isDefaultSmsApp()) {
-                injectSms(number)
+                injectCustomSms(senderNumber, messageBody)
             } else {
                 Toast.makeText(this, "يجب تعيين التطبيق كافتراضي للرسائل أولاً", Toast.LENGTH_SHORT).show()
                 requestDefaultSmsRole()
@@ -69,20 +77,26 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun injectSms(number: String) {
+    private fun injectCustomSms(sender: String, body: String) {
         val values = ContentValues().apply {
-            put(Telephony.Sms.ADDRESS, number)
-            put(Telephony.Sms.BODY, "هذه رسالة نصية محقونة للتجربة.") // محتوى الرسالة
+            put(Telephony.Sms.ADDRESS, sender)       // رقم المرسل المخصص من الواجهة
+            put(Telephony.Sms.BODY, body)             // محتوى النص المخصص من الواجهة
             put(Telephony.Sms.DATE, System.currentTimeMillis())
-            put(Telephony.Sms.READ, 0) // 0 تعني غير مقروءة، 1 تعني مقروءة
-            put(Telephony.Sms.TYPE, Telephony.Sms.MESSAGE_TYPE_INBOX) // نوع الرسالة: واردة
+            put(Telephony.Sms.DATE_SENT, System.currentTimeMillis())
+            put(Telephony.Sms.READ, 0)                // 0 تعني غير مقروءة لتظهر كإشعار جديد
+            put(Telephony.Sms.TYPE, Telephony.Sms.MESSAGE_TYPE_INBOX) // رسالة واردة
         }
 
         try {
-            contentResolver.insert(Telephony.Sms.Inbox.CONTENT_URI, values)
-            Toast.makeText(this, "تم حقن الرسالة بنجاح!", Toast.LENGTH_SHORT).show()
+            val uri = contentResolver.insert(Telephony.Sms.Inbox.CONTENT_URI, values)
+            
+            if (uri != null) {
+                Toast.makeText(this, "تم حقن الرسالة المخصصة بنجاح!", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "فشل الحقن: النظام رفض إدراج البيانات", Toast.LENGTH_SHORT).show()
+            }
         } catch (e: Exception) {
-            Toast.makeText(this, "فشل الحقن: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "خطأ: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 }
