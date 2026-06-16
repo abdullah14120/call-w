@@ -71,7 +71,8 @@ class MainActivity : AppCompatActivity() {
     private fun requestDefaultSmsRole() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val roleManager = getSystemService(ROLE_SERVICE) as RoleManager
-            if (!roleManager.isRoleHeld(Manager.ROLE_SMS)) {
+            // تصحيح الخطأ هنا: RoleManager بدلاً من Manager
+            if (!roleManager.isRoleHeld(RoleManager.ROLE_SMS)) {
                 val intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_SMS)
                 startActivityForResult(intent, REQUEST_ID)
             }
@@ -128,7 +129,8 @@ class MainActivity : AppCompatActivity() {
 
         // بناء الإشعار ليشبه إشعارات النظام الرسمية للرسائل
         val notificationBuilder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.mipmap/ic_launcher) // استخدام أيقونة التطبيق الخضراء للرسائل
+            // تصحيح الخطأ هنا: استخدام النقطة بدلاً من الشرطة المائلة
+            .setSmallIcon(R.mipmap.ic_launcher) 
             .setContentTitle(sender)           // عنوان الإشعار: رقم أو اسم المرسل
             .setContentText(body)             // محتوى الإشعار: نص الرسالة
             .setStyle(NotificationCompat.BigTextStyle().bigText(body)) // لدعم النصوص الطويلة بالكامل
@@ -136,7 +138,7 @@ class MainActivity : AppCompatActivity() {
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setAutoCancel(true)              // يختفي عند الضغط عليه
             .setContentIntent(pendingIntent)   // تحديد الإجراء عند الضغط
-            .setSound(Uri.parse("content://settings/system/notification_sound")) // نغمة الإشعار الافتراضية للرسائل
+            .setSound(Uri.parse("content://settings/system/notification_sound")) // نغمة الإشعار الافتراضية
 
         // إرسال الإشعار بمعرف فريد
         notificationManager.notify(System.currentTimeMillis().toInt(), notificationBuilder.build())
