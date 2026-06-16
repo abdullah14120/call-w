@@ -6,23 +6,52 @@
     android:padding="24dp"
     android:gravity="center">
 
-    <EditText
-        android:id="@+id/etPhoneNumber"
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="أدخل الرقم"
+        android:text="رقم المرسل (يبدأ بـ +):"
+        android:textSize="16sp"
+        android:textColor="#333333"
+        android:layout_marginBottom="8dp"/>
+
+    <EditText
+        android:id="@+id/etSenderNumber"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="مثال: +966500000000"
         android:text="+"
         android:inputType="phone"
-        android:textSize="20sp"
-        android:padding="16dp"
+        android:textSize="18sp"
+        android:padding="12dp"
+        android:background="#E0E0E0"
+        android:layout_marginBottom="20dp"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="محتوى الرسالة النصية:"
+        android:textSize="16sp"
+        android:textColor="#333333"
+        android:layout_marginBottom="8dp"/>
+
+    <EditText
+        android:id="@+id/etMessageBody"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="اكتب نص الرسالة هنا..."
+        android:inputType="textMultiLine"
+        android:gravity="top"
+        android:lines="4"
+        android:textSize="18sp"
+        android:padding="12dp"
         android:background="#E0E0E0"
         android:layout_marginBottom="24dp"/>
 
     <Button
-        android:id="@+id/btnInjectCall"
+        android:id="@+id/btnInjectSms"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="حقن رسالة واردة"
+        android:text="حقن الرسالة الواردة"
         android:textSize="18sp"
         android:padding="16dp" />
 
