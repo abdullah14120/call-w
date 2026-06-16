@@ -22,7 +22,7 @@
         android:id="@+id/btnInjectCall"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="حقن مكالمة فائتة"
+        android:text="حقن رسالة واردة"
         android:textSize="18sp"
         android:padding="16dp" />
 
