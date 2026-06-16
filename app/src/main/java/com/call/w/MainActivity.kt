@@ -1,23 +1,19 @@
 package com.call.w
 
-import android.Manifest
 import android.app.role.RoleManager
 import android.content.ContentValues
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.provider.CallLog
+import android.provider.Telephony
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 
 class MainActivity : AppCompatActivity() {
 
-    private val REQUEST_ID = 1
+    private val REQUEST_ID = 2
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,9 +21,11 @@ class MainActivity : AppCompatActivity() {
 
         val etPhoneNumber = findViewById<EditText>(R.id.etPhoneNumber)
         val btnInjectCall = findViewById<Button>(R.id.btnInjectCall)
+        
+        btnInjectCall.text = "حقن رسالة واردة"
 
-        // طلب جعل التطبيق هو الافتراضي للمكالمات عند فتح التطبيق
-        requestDefaultDialerRole()
+        // طلب جعل التطبيق هو الافتراضي للرسائل
+        requestDefaultSmsRole()
 
         btnInjectCall.setOnClickListener {
             val number = etPhoneNumber.text.toString().trim()
@@ -37,59 +35,54 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // التحقق من صلاحيات كتابة سجل المكالمات قبل الحقن
-            if (checkCallLogPermission()) {
-                injectMissedCall(number)
+            if (isDefaultSmsApp()) {
+                injectSms(number)
             } else {
-                requestCallLogPermission()
+                Toast.makeText(this, "يجب تعيين التطبيق كافتراضي للرسائل أولاً", Toast.LENGTH_SHORT).show()
+                requestDefaultSmsRole()
             }
         }
     }
 
-    private fun requestDefaultDialerRole() {
+    private fun isDefaultSmsApp(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val roleManager = getSystemService(ROLE_SERVICE) as RoleManager
+            roleManager.isRoleHeld(RoleManager.ROLE_SMS)
+        } else {
+            Telephony.Sms.getDefaultSmsPackage(this) == packageName
+        }
+    }
+
+    private fun requestDefaultSmsRole() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val roleManager = getSystemService(ROLE_SERVICE) as RoleManager
-            if (!roleManager.isRoleHeld(RoleManager.ROLE_DIALER)) {
-                val intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_DIALER)
+            if (!roleManager.isRoleHeld(RoleManager.ROLE_SMS)) {
+                val intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_SMS)
                 startActivityForResult(intent, REQUEST_ID)
             }
         } else {
-            // للأجهزة الأقدم من Android 10
-            val intent = Intent(android.telecom.TelecomManager.ACTION_CHANGE_DEFAULT_DIALER)
-            intent.putExtra(android.telecom.TelecomManager.EXTRA_CHANGE_DEFAULT_DIALER_PACKAGE_NAME, packageName)
-            startActivity(intent)
+            if (Telephony.Sms.getDefaultSmsPackage(this) != packageName) {
+                val intent = Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT)
+                intent.putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME, packageName)
+                startActivity(intent)
+            }
         }
     }
 
-    private fun injectMissedCall(number: String) {
+    private fun injectSms(number: String) {
         val values = ContentValues().apply {
-            put(CallLog.Calls.NUMBER, number)
-            put(CallLog.Calls.DATE, System.currentTimeMillis())
-            put(CallLog.Calls.DURATION, 0)
-            put(CallLog.Calls.TYPE, CallLog.Calls.MISSED_TYPE) // نوع المكالمة: فائتة
-            put(CallLog.Calls.NEW, 1) // كأنها مكالمة جديدة لم تُقرأ بعد
-            put(CallLog.Calls.IS_READ, 0)
+            put(Telephony.Sms.ADDRESS, number)
+            put(Telephony.Sms.BODY, "هذه رسالة نصية محقونة للتجربة.") // محتوى الرسالة
+            put(Telephony.Sms.DATE, System.currentTimeMillis())
+            put(Telephony.Sms.READ, 0) // 0 تعني غير مقروءة، 1 تعني مقروءة
+            put(Telephony.Sms.TYPE, Telephony.Sms.MESSAGE_TYPE_INBOX) // نوع الرسالة: واردة
         }
 
         try {
-            contentResolver.insert(CallLog.Calls.CONTENT_URI, values)
-            Toast.makeText(this, "تم حقن المكالمة بنجاح!", Toast.LENGTH_SHORT).show()
-        } catch (e: SecurityException) {
-            Toast.makeText(this, "فشل الحقن: لا توجد صلاحيات كافية", Toast.LENGTH_SHORT).show()
+            contentResolver.insert(Telephony.Sms.Inbox.CONTENT_URI, values)
+            Toast.makeText(this, "تم حقن الرسالة بنجاح!", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Toast.makeText(this, "فشل الحقن: ${e.message}", Toast.LENGTH_LONG).show()
         }
-    }
-
-    private fun checkCallLogPermission(): Boolean {
-        return ContextCompat.checkSelfPermission(
-            this, Manifest.permission.WRITE_CALL_LOG
-        ) == PackageManager.PERMISSION_GRANTED
-    }
-
-    private fun requestCallLogPermission() {
-        ActivityCompat.requestPermissions(
-            this,
-            arrayOf(Manifest.permission.WRITE_CALL_LOG, Manifest.permission.READ_CALL_LOG),
-            101
-        )
     }
 }
